@@ -2,6 +2,7 @@ package com.examen.badwallet_api.service;
 
 import com.examen.badwallet_api.dto.request.CreateWalletRequest;
 import com.examen.badwallet_api.dto.request.DepositRequest;
+import com.examen.badwallet_api.dto.request.TransferRequest;
 import com.examen.badwallet_api.dto.request.WithdrawRequest;
 import com.examen.badwallet_api.dto.response.TransactionResponse;
 import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
@@ -23,4 +24,6 @@ public interface WalletService {
 	TransactionResponse deposit(Long id, DepositRequest request);
 
 	TransactionResponse withdraw(WithdrawRequest request);
+
+	TransactionResponse transfer(TransferRequest request);
 }

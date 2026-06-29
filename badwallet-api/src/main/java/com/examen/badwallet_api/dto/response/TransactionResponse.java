@@ -21,6 +21,8 @@ public class TransactionResponse {
 	private final String reference;
 	private final LocalDateTime createdAt;
 	private final String message;
+	private final String senderPhone;
+	private final String receiverPhone;
 
 	public TransactionResponse(
 			Long id,
@@ -49,6 +51,24 @@ public class TransactionResponse {
 			String reference,
 			LocalDateTime createdAt,
 			String message) {
+		this(id, walletId, amount, fees, total, balance, paymentMethod, type, status, reference, createdAt, message, null, null);
+	}
+
+	public TransactionResponse(
+			Long id,
+			Long walletId,
+			BigDecimal amount,
+			BigDecimal fees,
+			BigDecimal total,
+			BigDecimal balance,
+			PaymentMethod paymentMethod,
+			TransactionType type,
+			TransactionStatus status,
+			String reference,
+			LocalDateTime createdAt,
+			String message,
+			String senderPhone,
+			String receiverPhone) {
 		this.id = id;
 		this.walletId = walletId;
 		this.amount = amount;
@@ -61,6 +81,8 @@ public class TransactionResponse {
 		this.reference = reference;
 		this.createdAt = createdAt;
 		this.message = message;
+		this.senderPhone = senderPhone;
+		this.receiverPhone = receiverPhone;
 	}
 
 	public Long getId() {
@@ -109,5 +131,13 @@ public class TransactionResponse {
 
 	public String getMessage() {
 		return message;
+	}
+
+	public String getSenderPhone() {
+		return senderPhone;
+	}
+
+	public String getReceiverPhone() {
+		return receiverPhone;
 	}
 }

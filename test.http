@@ -45,3 +45,13 @@ Content-Type: application/json
   "phoneNumber": "+221770000001",
   "amount": 10000.00
 }
+
+### Transfer between wallets in badwallet-api
+POST {{walletHost}}/api/wallets/transfer
+Content-Type: application/json
+
+{
+  "senderPhone": "+221770000001",
+  "receiverPhone": "+221770000002",
+  "amount": 2000.00
+}

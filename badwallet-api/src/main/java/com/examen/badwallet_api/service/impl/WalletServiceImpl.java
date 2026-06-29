@@ -2,6 +2,7 @@ package com.examen.badwallet_api.service.impl;
 
 import com.examen.badwallet_api.dto.request.CreateWalletRequest;
 import com.examen.badwallet_api.dto.request.DepositRequest;
+import com.examen.badwallet_api.dto.request.TransferRequest;
 import com.examen.badwallet_api.dto.request.WithdrawRequest;
 import com.examen.badwallet_api.dto.response.TransactionResponse;
 import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
@@ -133,6 +134,41 @@ public class WalletServiceImpl implements WalletService {
 		return toWithdrawTransactionResponse(savedTransaction, savedWallet, fees, total);
 	}
 
+	@Override
+	@Transactional
+	public TransactionResponse transfer(TransferRequest request) {
+		if (request.getSenderPhone().equals(request.getReceiverPhone())) {
+			throw new ResponseStatusException(
+					HttpStatus.BAD_REQUEST,
+					"Le wallet expediteur et le wallet destinataire doivent etre differents");
+		}
+
+		Wallet sender = findWalletByPhoneNumber(request.getSenderPhone());
+		Wallet receiver = findWalletByPhoneNumber(request.getReceiverPhone());
+		BigDecimal amount = request.getAmount();
+
+		if (sender.getBalance().compareTo(amount) < 0) {
+			throw new ResponseStatusException(
+					HttpStatus.CONFLICT,
+					"Solde insuffisant pour effectuer le transfert");
+		}
+
+		sender.setBalance(sender.getBalance().subtract(amount));
+		receiver.setBalance(receiver.getBalance().add(amount));
+
+		Wallet savedSender = walletRepository.saveAndFlush(sender);
+		walletRepository.saveAndFlush(receiver);
+
+		String reference = "TRANSFER-" + UUID.randomUUID();
+		Transaction senderTransaction = createTransferTransaction(savedSender, amount, reference);
+		Transaction receiverTransaction = createTransferTransaction(receiver, amount, reference);
+
+		Transaction savedSenderTransaction = transactionRepository.saveAndFlush(senderTransaction);
+		transactionRepository.saveAndFlush(receiverTransaction);
+
+		return toTransferTransactionResponse(savedSenderTransaction, savedSender, receiver);
+	}
+
 	private void validateUniqueWallet(CreateWalletRequest request) {
 		if (walletRepository.existsByPhoneNumber(request.getPhoneNumber())) {
 			throw new BusinessException("Un wallet existe deja avec ce numero de telephone");
@@ -180,6 +216,17 @@ public class WalletServiceImpl implements WalletService {
 		return fees.setScale(2, RoundingMode.HALF_UP);
 	}
 
+	private Transaction createTransferTransaction(Wallet wallet, BigDecimal amount, String reference) {
+		Transaction transaction = new Transaction();
+		transaction.setWallet(wallet);
+		transaction.setAmount(amount);
+		transaction.setPaymentMethod(PaymentMethod.WALLET);
+		transaction.setType(TransactionType.TRANSFER);
+		transaction.setStatus(TransactionStatus.SUCCESS);
+		transaction.setReference(reference);
+		return transaction;
+	}
+
 	private TransactionResponse toTransactionResponse(Transaction transaction, Wallet wallet) {
 		return new TransactionResponse(
 				transaction.getId(),
@@ -212,5 +259,26 @@ public class WalletServiceImpl implements WalletService {
 				transaction.getReference(),
 				transaction.getCreatedAt(),
 				"Retrait effectue avec succes");
+	}
+
+	private TransactionResponse toTransferTransactionResponse(
+			Transaction transaction,
+			Wallet sender,
+			Wallet receiver) {
+		return new TransactionResponse(
+				transaction.getId(),
+				sender.getId(),
+				transaction.getAmount(),
+				null,
+				null,
+				sender.getBalance(),
+				transaction.getPaymentMethod(),
+				transaction.getType(),
+				transaction.getStatus(),
+				transaction.getReference(),
+				transaction.getCreatedAt(),
+				"Transfert effectue avec succes",
+				sender.getPhoneNumber(),
+				receiver.getPhoneNumber());
 	}
 }
