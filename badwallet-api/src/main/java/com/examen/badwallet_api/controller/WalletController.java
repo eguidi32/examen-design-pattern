@@ -2,6 +2,7 @@ package com.examen.badwallet_api.controller;
 
 import com.examen.badwallet_api.dto.request.CreateWalletRequest;
 import com.examen.badwallet_api.dto.response.SeedWalletResponse;
+import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
 import com.examen.badwallet_api.dto.response.WalletResponse;
 import com.examen.badwallet_api.service.WalletService;
 import com.examen.badwallet_api.service.WalletSeederService;
@@ -52,6 +53,11 @@ public class WalletController {
 	@GetMapping("/{phoneNumber}")
 	public WalletResponse getWalletByPhoneNumber(@PathVariable String phoneNumber) {
 		return walletService.getWalletByPhoneNumber(phoneNumber);
+	}
+
+	@GetMapping("/{phoneNumber}/balance")
+	public WalletBalanceResponse getWalletBalance(@PathVariable String phoneNumber) {
+		return walletService.getWalletBalance(phoneNumber);
 	}
 
 	@PostMapping("/seed")

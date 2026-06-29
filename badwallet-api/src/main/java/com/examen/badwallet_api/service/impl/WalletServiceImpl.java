@@ -1,6 +1,7 @@
 package com.examen.badwallet_api.service.impl;
 
 import com.examen.badwallet_api.dto.request.CreateWalletRequest;
+import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
 import com.examen.badwallet_api.dto.response.WalletResponse;
 import com.examen.badwallet_api.entity.Wallet;
 import com.examen.badwallet_api.exception.BusinessException;
@@ -47,11 +48,13 @@ public class WalletServiceImpl implements WalletService {
 	@Override
 	@Transactional(readOnly = true)
 	public WalletResponse getWalletByPhoneNumber(String phoneNumber) {
-		return walletRepository.findByPhoneNumber(phoneNumber)
-				.map(this::toResponse)
-				.orElseThrow(() -> new ResponseStatusException(
-						HttpStatus.NOT_FOUND,
-						"Aucun wallet trouve avec ce numero de telephone"));
+		return toResponse(findWalletByPhoneNumber(phoneNumber));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public WalletBalanceResponse getWalletBalance(String phoneNumber) {
+		return toBalanceResponse(findWalletByPhoneNumber(phoneNumber));
 	}
 
 	private void validateUniqueWallet(CreateWalletRequest request) {
@@ -66,6 +69,13 @@ public class WalletServiceImpl implements WalletService {
 		}
 	}
 
+	private Wallet findWalletByPhoneNumber(String phoneNumber) {
+		return walletRepository.findByPhoneNumber(phoneNumber)
+				.orElseThrow(() -> new ResponseStatusException(
+						HttpStatus.NOT_FOUND,
+						"Aucun wallet trouve avec ce numero de telephone"));
+	}
+
 	private WalletResponse toResponse(Wallet wallet) {
 		return new WalletResponse(
 				wallet.getId(),
@@ -76,5 +86,13 @@ public class WalletServiceImpl implements WalletService {
 				wallet.getCurrency(),
 				wallet.getCreatedAt(),
 				wallet.getUpdatedAt());
+	}
+
+	private WalletBalanceResponse toBalanceResponse(Wallet wallet) {
+		return new WalletBalanceResponse(
+				wallet.getPhoneNumber(),
+				wallet.getCode(),
+				wallet.getBalance(),
+				wallet.getCurrency());
 	}
 }

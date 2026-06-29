@@ -1,6 +1,7 @@
 package com.examen.badwallet_api.service;
 
 import com.examen.badwallet_api.dto.request.CreateWalletRequest;
+import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
 import com.examen.badwallet_api.dto.response.WalletResponse;
 
 import org.springframework.data.domain.Page;
@@ -13,4 +14,6 @@ public interface WalletService {
 	Page<WalletResponse> listWallets(Pageable pageable);
 
 	WalletResponse getWalletByPhoneNumber(String phoneNumber);
+
+	WalletBalanceResponse getWalletBalance(String phoneNumber);
 }

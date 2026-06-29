@@ -23,3 +23,7 @@ Content-Type: application/json
 ### Get wallet by phone number in badwallet-api
 GET {{walletHost}}/api/wallets/+221770000003
 Content-Type: application/json
+
+### Get wallet balance by phone number in badwallet-api
+GET {{walletHost}}/api/wallets/+221770000003/balance
+Content-Type: application/json
