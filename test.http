@@ -1,0 +1,5 @@
+@walletHost = http://localhost:8080
+@paymentHost = http://localhost:8081
+
+### Seed wallets in badwallet-api
+POST {{walletHost}}/api/wallets/seed?numWallets=10&eventsPerWallet=100
