@@ -1,6 +1,8 @@
 @walletHost = http://localhost:8080
 @paymentHost = http://localhost:8081
 
+### PARTIE 1 : badwallet-api
+
 ### Seed wallets in badwallet-api
 POST {{walletHost}}/api/wallets/seed?numWallets=10&eventsPerWallet=100
 
@@ -26,10 +28,6 @@ Content-Type: application/json
 
 ### Get wallet balance by phone number in badwallet-api
 GET {{walletHost}}/api/wallets/+221770000003/balance
-Content-Type: application/json
-
-### Get wallet transaction history by phone number in badwallet-api
-GET {{walletHost}}/api/wallets/+221770000003/transactions
 Content-Type: application/json
 
 ### Deposit into wallet in badwallet-api
@@ -60,34 +58,6 @@ Content-Type: application/json
   "amount": 2000.00
 }
 
-### Seed factures in payment-service
-POST {{paymentHost}}/api/factures/seed
-Content-Type: application/json
-
-### Get current unpaid factures in payment-service
-GET {{paymentHost}}/api/factures/WLT-0000003/current
-Content-Type: application/json
-
-### Get current unpaid factures by unite in payment-service
-GET {{paymentHost}}/api/factures/WLT-0000003/current?unite=WOYAFAL
-Content-Type: application/json
-
-### Get unpaid factures by period in payment-service
-GET {{paymentHost}}/api/factures/WLT-0000003/periode?debut=2026-05-01&fin=2026-07-01
-Content-Type: application/json
-
-### Get current unpaid factures through badwallet-api proxy
-GET {{walletHost}}/api/external/factures/WLT-0000003/current
-Content-Type: application/json
-
-### Get current unpaid factures by unite through badwallet-api proxy
-GET {{walletHost}}/api/external/factures/WLT-0000003/current?unite=WOYAFAL
-Content-Type: application/json
-
-### Get unpaid factures by period through badwallet-api proxy
-GET {{walletHost}}/api/external/factures/WLT-0000003/periode?debut=2026-05-01&fin=2026-07-01
-Content-Type: application/json
-
 ### Pay current month facture in badwallet-api
 POST {{walletHost}}/api/wallets/pay
 Content-Type: application/json
@@ -107,3 +77,39 @@ Content-Type: application/json
   "serviceName": "ISM",
   "factureReferences": ["FAC-ISM-3-1", "FAC-ISM-3-3"]
 }
+
+### Get wallet transaction history by phone number in badwallet-api
+GET {{walletHost}}/api/wallets/+221770000003/transactions
+Content-Type: application/json
+
+### PARTIE 2 : Proxy API dans badwallet-api
+
+### Get current unpaid factures through badwallet-api proxy
+GET {{walletHost}}/api/external/factures/WLT-0000003/current
+Content-Type: application/json
+
+### Get current unpaid factures by unite through badwallet-api proxy
+GET {{walletHost}}/api/external/factures/WLT-0000003/current?unite=WOYAFAL
+Content-Type: application/json
+
+### Get unpaid factures by period through badwallet-api proxy
+GET {{walletHost}}/api/external/factures/WLT-0000003/periode?debut=2026-05-01&fin=2026-07-01
+Content-Type: application/json
+
+### PARTIE 3 : payment-service, uniquement si nécessaire pour seed/test interne
+
+### Seed factures in payment-service
+POST {{paymentHost}}/api/factures/seed
+Content-Type: application/json
+
+### Get current unpaid factures in payment-service
+GET {{paymentHost}}/api/factures/WLT-0000003/current
+Content-Type: application/json
+
+### Get current unpaid factures by unite in payment-service
+GET {{paymentHost}}/api/factures/WLT-0000003/current?unite=WOYAFAL
+Content-Type: application/json
+
+### Get unpaid factures by period in payment-service
+GET {{paymentHost}}/api/factures/WLT-0000003/periode?debut=2026-05-01&fin=2026-07-01
+Content-Type: application/json
