@@ -55,3 +55,7 @@ Content-Type: application/json
   "receiverPhone": "+221770000002",
   "amount": 2000.00
 }
+
+### Seed factures in payment-service
+POST {{paymentHost}}/api/factures/seed
+Content-Type: application/json
