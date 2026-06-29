@@ -33,17 +33,22 @@ public class FactureSeederServiceImpl implements FactureSeederService {
 	public SeedFactureResponse seedFactures() {
 		List<Facture> factures = buildFactures();
 		int created = 0;
+		int updated = 0;
 
 		for (Facture facture : factures) {
-			if (!factureRepository.existsByReference(facture.getReference())) {
+			Facture existingFacture = factureRepository.findByReference(facture.getReference()).orElse(null);
+			if (existingFacture == null) {
 				factureRepository.save(facture);
 				created++;
+			} else if (updateFacture(existingFacture, facture)) {
+				factureRepository.save(existingFacture);
+				updated++;
 			}
 		}
 
-		String message = created == 0
-				? "Aucune nouvelle facture creee, les donnees de seed existent deja"
-				: "Factures de seed creees avec succes";
+		String message = created == 0 && updated == 0
+				? "Aucune facture modifiee, les donnees de seed sont deja a jour"
+				: "Factures de seed creees ou mises a jour avec succes";
 
 		return new SeedFactureResponse(WALLET_CODES, created, message);
 	}
@@ -69,9 +74,9 @@ public class FactureSeederServiceImpl implements FactureSeederService {
 					walletCode,
 					ServiceName.ISM,
 					new BigDecimal("18500.00"),
-					FactureStatus.PAID,
-					now.minusMonths(1).withDayOfMonth(15),
-					LocalDateTime.now().minusDays(12)));
+					FactureStatus.UNPAID,
+					LocalDate.of(2026, 5, 15),
+					null));
 			factures.add(createFacture(
 					"FAC-ISM-" + walletNumber + "-3",
 					walletCode,
@@ -95,7 +100,7 @@ public class FactureSeederServiceImpl implements FactureSeederService {
 					new BigDecimal("12000.00"),
 					FactureStatus.PAID,
 					now.minusMonths(1).withDayOfMonth(25),
-					LocalDateTime.now().minusDays(8)));
+					LocalDateTime.of(2026, 5, 26, 10, 0)));
 		}
 
 		return factures;
@@ -118,5 +123,37 @@ public class FactureSeederServiceImpl implements FactureSeederService {
 		facture.setDueDate(dueDate);
 		facture.setPaidAt(paidAt);
 		return facture;
+	}
+
+	private boolean updateFacture(Facture target, Facture source) {
+		boolean changed = false;
+
+		if (!target.getWalletCode().equals(source.getWalletCode())) {
+			target.setWalletCode(source.getWalletCode());
+			changed = true;
+		}
+		if (target.getServiceName() != source.getServiceName()) {
+			target.setServiceName(source.getServiceName());
+			changed = true;
+		}
+		if (target.getAmount().compareTo(source.getAmount()) != 0) {
+			target.setAmount(source.getAmount());
+			changed = true;
+		}
+		if (target.getStatus() != source.getStatus()) {
+			target.setStatus(source.getStatus());
+			changed = true;
+		}
+		if (!target.getDueDate().equals(source.getDueDate())) {
+			target.setDueDate(source.getDueDate());
+			changed = true;
+		}
+		if ((target.getPaidAt() == null && source.getPaidAt() != null)
+				|| (target.getPaidAt() != null && !target.getPaidAt().equals(source.getPaidAt()))) {
+			target.setPaidAt(source.getPaidAt());
+			changed = true;
+		}
+
+		return changed;
 	}
 }
