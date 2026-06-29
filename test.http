@@ -3,3 +3,15 @@
 
 ### Seed wallets in badwallet-api
 POST {{walletHost}}/api/wallets/seed?numWallets=10&eventsPerWallet=100
+
+### Create wallet in badwallet-api
+POST {{walletHost}}/api/wallets
+Content-Type: application/json
+
+{
+  "phoneNumber": "+221779998877",
+  "email": "testclient@gmail.com",
+  "initialBalance": 25000,
+  "code": "WLT-TEST001",
+  "currency": "XOF"
+}

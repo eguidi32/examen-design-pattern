@@ -10,4 +10,10 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 	Optional<Wallet> findByCode(String code);
 
 	Optional<Wallet> findByPhoneNumber(String phoneNumber);
+
+	boolean existsByPhoneNumber(String phoneNumber);
+
+	boolean existsByEmail(String email);
+
+	boolean existsByCode(String code);
 }
