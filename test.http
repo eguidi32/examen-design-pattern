@@ -28,6 +28,10 @@ Content-Type: application/json
 GET {{walletHost}}/api/wallets/+221770000003/balance
 Content-Type: application/json
 
+### Get wallet transaction history by phone number in badwallet-api
+GET {{walletHost}}/api/wallets/+221770000003/transactions
+Content-Type: application/json
+
 ### Deposit into wallet in badwallet-api
 POST {{walletHost}}/api/wallets/1/deposit
 Content-Type: application/json

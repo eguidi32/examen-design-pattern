@@ -11,6 +11,7 @@ import com.examen.badwallet_api.dto.response.SpecificBillPaymentResponse;
 import com.examen.badwallet_api.dto.response.TransactionResponse;
 import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
 import com.examen.badwallet_api.dto.response.WalletResponse;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,4 +35,6 @@ public interface WalletService {
 	BillPaymentResponse payCurrentFacture(PayCurrentFactureRequest request);
 
 	SpecificBillPaymentResponse paySpecificFactures(PaySpecificFacturesRequest request);
+
+	List<TransactionResponse> getTransactionsByPhoneNumber(String phoneNumber);
 }

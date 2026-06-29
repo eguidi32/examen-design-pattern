@@ -103,6 +103,16 @@ public class WalletServiceImpl implements WalletService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
+	public List<TransactionResponse> getTransactionsByPhoneNumber(String phoneNumber) {
+		Wallet wallet = findWalletByPhoneNumber(normalizePhoneNumber(phoneNumber));
+		return transactionRepository.findByWalletOrderByCreatedAtDesc(wallet)
+				.stream()
+				.map(this::toHistoryTransactionResponse)
+				.toList();
+	}
+
+	@Override
 	@Transactional
 	public TransactionResponse deposit(Long id, DepositRequest request) {
 		if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
@@ -340,6 +350,17 @@ public class WalletServiceImpl implements WalletService {
 						"Aucun wallet trouve avec ce numero de telephone"));
 	}
 
+	private String normalizePhoneNumber(String phoneNumber) {
+		if (phoneNumber == null || phoneNumber.isBlank()) {
+			return phoneNumber;
+		}
+		String normalizedPhoneNumber = phoneNumber.trim();
+		if (normalizedPhoneNumber.startsWith("221")) {
+			return "+" + normalizedPhoneNumber;
+		}
+		return normalizedPhoneNumber;
+	}
+
 	private WalletResponse toResponse(Wallet wallet) {
 		return new WalletResponse(
 				wallet.getId(),
@@ -432,6 +453,22 @@ public class WalletServiceImpl implements WalletService {
 				"Transfert effectue avec succes",
 				sender.getPhoneNumber(),
 				receiver.getPhoneNumber());
+	}
+
+	private TransactionResponse toHistoryTransactionResponse(Transaction transaction) {
+		return new TransactionResponse(
+				transaction.getId(),
+				transaction.getWallet().getId(),
+				transaction.getAmount(),
+				null,
+				null,
+				null,
+				transaction.getPaymentMethod(),
+				transaction.getType(),
+				transaction.getStatus(),
+				transaction.getReference(),
+				transaction.getCreatedAt(),
+				"Transaction recuperee avec succes");
 	}
 
 	private void validateSpecificFacture(Wallet wallet, String serviceName, ExternalFactureResponse facture) {

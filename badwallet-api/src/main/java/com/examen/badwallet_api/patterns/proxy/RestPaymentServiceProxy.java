@@ -25,7 +25,7 @@ public class RestPaymentServiceProxy implements PaymentServiceProxy {
 
 	public RestPaymentServiceProxy(
 			RestTemplate restTemplate,
-			@Value("${payment.service.base-url}") String paymentServiceBaseUrl) {
+			@Value("${payment.service.base-url:http://localhost:8081}") String paymentServiceBaseUrl) {
 		this.restTemplate = restTemplate;
 		this.paymentServiceBaseUrl = paymentServiceBaseUrl;
 	}
