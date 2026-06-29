@@ -83,3 +83,13 @@ Content-Type: application/json
 ### Get unpaid factures by period through badwallet-api proxy
 GET {{walletHost}}/api/external/factures/WLT-0000003/periode?debut=2026-05-01&fin=2026-07-01
 Content-Type: application/json
+
+### Pay current month facture in badwallet-api
+POST {{walletHost}}/api/wallets/pay
+Content-Type: application/json
+
+{
+  "phoneNumber": "+221770000003",
+  "serviceName": "ISM",
+  "amount": 5000.00
+}

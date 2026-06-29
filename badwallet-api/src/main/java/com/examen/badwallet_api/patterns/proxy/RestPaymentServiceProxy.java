@@ -6,7 +6,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
@@ -50,6 +52,37 @@ public class RestPaymentServiceProxy implements PaymentServiceProxy {
 				.queryParam("fin", fin);
 
 		return getFactures(builder);
+	}
+
+	@Override
+	public ExternalFactureResponse markFactureAsPaid(String reference) {
+		UriComponentsBuilder builder = UriComponentsBuilder
+				.fromUriString(paymentServiceBaseUrl)
+				.pathSegment("api", "factures", reference, "pay");
+
+		try {
+			ResponseEntity<ExternalFactureResponse> response = restTemplate.exchange(
+					builder.build().toUri(),
+					HttpMethod.PATCH,
+					null,
+					ExternalFactureResponse.class);
+			return response.getBody();
+		} catch (ResourceAccessException exception) {
+			throw new ResponseStatusException(
+					HttpStatus.SERVICE_UNAVAILABLE,
+					"payment-service est indisponible",
+					exception);
+		} catch (HttpStatusCodeException exception) {
+			throw new ResponseStatusException(
+					HttpStatus.BAD_GATEWAY,
+					"payment-service a retourne une erreur: " + exception.getStatusCode(),
+					exception);
+		} catch (RestClientException exception) {
+			throw new ResponseStatusException(
+					HttpStatus.BAD_GATEWAY,
+					"Erreur lors de l'appel a payment-service",
+					exception);
+		}
 	}
 
 	private List<ExternalFactureResponse> getFactures(UriComponentsBuilder builder) {

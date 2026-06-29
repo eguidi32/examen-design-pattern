@@ -2,8 +2,10 @@ package com.examen.badwallet_api.controller;
 
 import com.examen.badwallet_api.dto.request.CreateWalletRequest;
 import com.examen.badwallet_api.dto.request.DepositRequest;
+import com.examen.badwallet_api.dto.request.PayCurrentFactureRequest;
 import com.examen.badwallet_api.dto.request.TransferRequest;
 import com.examen.badwallet_api.dto.request.WithdrawRequest;
+import com.examen.badwallet_api.dto.response.BillPaymentResponse;
 import com.examen.badwallet_api.dto.response.SeedWalletResponse;
 import com.examen.badwallet_api.dto.response.TransactionResponse;
 import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
@@ -79,6 +81,11 @@ public class WalletController {
 	@PostMapping("/transfer")
 	public TransactionResponse transfer(@Valid @RequestBody TransferRequest request) {
 		return walletService.transfer(request);
+	}
+
+	@PostMapping("/pay")
+	public BillPaymentResponse payCurrentFacture(@Valid @RequestBody PayCurrentFactureRequest request) {
+		return walletService.payCurrentFacture(request);
 	}
 
 	@PostMapping("/seed")

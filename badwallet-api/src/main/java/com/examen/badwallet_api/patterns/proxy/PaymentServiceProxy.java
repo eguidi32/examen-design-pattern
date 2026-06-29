@@ -9,4 +9,6 @@ public interface PaymentServiceProxy {
 	List<ExternalFactureResponse> getCurrentFactures(String walletCode, String unite);
 
 	List<ExternalFactureResponse> getFacturesByPeriod(String walletCode, LocalDate debut, LocalDate fin);
+
+	ExternalFactureResponse markFactureAsPaid(String reference);
 }

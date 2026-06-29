@@ -2,8 +2,11 @@ package com.examen.badwallet_api.service.impl;
 
 import com.examen.badwallet_api.dto.request.CreateWalletRequest;
 import com.examen.badwallet_api.dto.request.DepositRequest;
+import com.examen.badwallet_api.dto.request.PayCurrentFactureRequest;
 import com.examen.badwallet_api.dto.request.TransferRequest;
 import com.examen.badwallet_api.dto.request.WithdrawRequest;
+import com.examen.badwallet_api.dto.response.BillPaymentResponse;
+import com.examen.badwallet_api.dto.response.ExternalFactureResponse;
 import com.examen.badwallet_api.dto.response.TransactionResponse;
 import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
 import com.examen.badwallet_api.dto.response.WalletResponse;
@@ -13,6 +16,9 @@ import com.examen.badwallet_api.enums.PaymentMethod;
 import com.examen.badwallet_api.enums.TransactionStatus;
 import com.examen.badwallet_api.enums.TransactionType;
 import com.examen.badwallet_api.exception.BusinessException;
+import com.examen.badwallet_api.patterns.factory.BillPaymentFactory;
+import com.examen.badwallet_api.patterns.factory.BillPaymentHandler;
+import com.examen.badwallet_api.patterns.proxy.PaymentServiceProxy;
 import com.examen.badwallet_api.patterns.strategy.DepositStrategy;
 import com.examen.badwallet_api.patterns.strategy.DepositStrategyFactory;
 import com.examen.badwallet_api.repository.TransactionRepository;
@@ -38,14 +44,20 @@ public class WalletServiceImpl implements WalletService {
 	private final WalletRepository walletRepository;
 	private final TransactionRepository transactionRepository;
 	private final DepositStrategyFactory depositStrategyFactory;
+	private final BillPaymentFactory billPaymentFactory;
+	private final PaymentServiceProxy paymentServiceProxy;
 
 	public WalletServiceImpl(
 			WalletRepository walletRepository,
 			TransactionRepository transactionRepository,
-			DepositStrategyFactory depositStrategyFactory) {
+			DepositStrategyFactory depositStrategyFactory,
+			BillPaymentFactory billPaymentFactory,
+			PaymentServiceProxy paymentServiceProxy) {
 		this.walletRepository = walletRepository;
 		this.transactionRepository = transactionRepository;
 		this.depositStrategyFactory = depositStrategyFactory;
+		this.billPaymentFactory = billPaymentFactory;
+		this.paymentServiceProxy = paymentServiceProxy;
 	}
 
 	@Override
@@ -167,6 +179,57 @@ public class WalletServiceImpl implements WalletService {
 		transactionRepository.saveAndFlush(receiverTransaction);
 
 		return toTransferTransactionResponse(savedSenderTransaction, savedSender, receiver);
+	}
+
+	@Override
+	@Transactional
+	public BillPaymentResponse payCurrentFacture(PayCurrentFactureRequest request) {
+		Wallet wallet = findWalletByPhoneNumber(request.getPhoneNumber());
+		BillPaymentHandler handler = billPaymentFactory.getHandler(request.getServiceName());
+		ExternalFactureResponse facture = handler.findCurrentUnpaidFacture(wallet.getCode())
+				.orElseThrow(() -> new ResponseStatusException(
+						HttpStatus.NOT_FOUND,
+						"Aucune facture impayee du mois courant trouvee pour ce service"));
+
+		if ("PAID".equalsIgnoreCase(facture.getStatus())) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "La facture est deja payee");
+		}
+
+		BigDecimal amount = request.getAmount();
+		if (wallet.getBalance().compareTo(amount) < 0) {
+			throw new ResponseStatusException(
+					HttpStatus.CONFLICT,
+					"Solde insuffisant pour payer la facture");
+		}
+
+		wallet.setBalance(wallet.getBalance().subtract(amount));
+		Wallet savedWallet = walletRepository.saveAndFlush(wallet);
+
+		ExternalFactureResponse paidFacture = paymentServiceProxy.markFactureAsPaid(facture.getReference());
+
+		Transaction transaction = new Transaction();
+		transaction.setWallet(savedWallet);
+		transaction.setAmount(amount);
+		transaction.setPaymentMethod(PaymentMethod.WALLET);
+		transaction.setType(TransactionType.BILL_PAYMENT);
+		transaction.setStatus(TransactionStatus.SUCCESS);
+		transaction.setReference("BILL-PAYMENT-" + UUID.randomUUID());
+		transactionRepository.saveAndFlush(transaction);
+
+		String factureReference = paidFacture != null && paidFacture.getReference() != null
+				? paidFacture.getReference()
+				: facture.getReference();
+
+		return new BillPaymentResponse(
+				savedWallet.getPhoneNumber(),
+				savedWallet.getCode(),
+				handler.serviceName(),
+				amount,
+				factureReference,
+				savedWallet.getBalance(),
+				TransactionType.BILL_PAYMENT,
+				TransactionStatus.SUCCESS,
+				"Facture payee avec succes");
 	}
 
 	private void validateUniqueWallet(CreateWalletRequest request) {

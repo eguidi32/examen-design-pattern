@@ -10,4 +10,6 @@ public interface FactureService {
 	List<FactureResponse> findCurrentUnpaidFactures(String walletCode, ServiceName unite);
 
 	List<FactureResponse> findUnpaidFacturesByPeriod(String walletCode, LocalDate debut, LocalDate fin);
+
+	FactureResponse payFacture(String reference);
 }
