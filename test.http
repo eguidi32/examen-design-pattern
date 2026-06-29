@@ -15,3 +15,7 @@ Content-Type: application/json
   "code": "WLT-TEST001",
   "currency": "XOF"
 }
+
+### List wallets in badwallet-api
+GET {{walletHost}}/api/wallets?page=0&size=10
+Content-Type: application/json

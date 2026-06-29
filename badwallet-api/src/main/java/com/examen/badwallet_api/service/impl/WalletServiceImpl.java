@@ -7,6 +7,8 @@ import com.examen.badwallet_api.exception.BusinessException;
 import com.examen.badwallet_api.repository.WalletRepository;
 import com.examen.badwallet_api.service.WalletService;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,12 @@ public class WalletServiceImpl implements WalletService {
 		wallet.setCurrency(request.getCurrency());
 
 		return toResponse(walletRepository.save(wallet));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Page<WalletResponse> listWallets(Pageable pageable) {
+		return walletRepository.findAll(pageable).map(this::toResponse);
 	}
 
 	private void validateUniqueWallet(CreateWalletRequest request) {
