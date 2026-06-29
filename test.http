@@ -71,3 +71,15 @@ Content-Type: application/json
 ### Get unpaid factures by period in payment-service
 GET {{paymentHost}}/api/factures/WLT-0000003/periode?debut=2026-05-01&fin=2026-07-01
 Content-Type: application/json
+
+### Get current unpaid factures through badwallet-api proxy
+GET {{walletHost}}/api/external/factures/WLT-0000003/current
+Content-Type: application/json
+
+### Get current unpaid factures by unite through badwallet-api proxy
+GET {{walletHost}}/api/external/factures/WLT-0000003/current?unite=WOYAFAL
+Content-Type: application/json
+
+### Get unpaid factures by period through badwallet-api proxy
+GET {{walletHost}}/api/external/factures/WLT-0000003/periode?debut=2026-05-01&fin=2026-07-01
+Content-Type: application/json
