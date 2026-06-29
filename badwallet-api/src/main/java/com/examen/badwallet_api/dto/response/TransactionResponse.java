@@ -12,6 +12,8 @@ public class TransactionResponse {
 	private final Long id;
 	private final Long walletId;
 	private final BigDecimal amount;
+	private final BigDecimal fees;
+	private final BigDecimal total;
 	private final BigDecimal balance;
 	private final PaymentMethod paymentMethod;
 	private final TransactionType type;
@@ -31,9 +33,27 @@ public class TransactionResponse {
 			String reference,
 			LocalDateTime createdAt,
 			String message) {
+		this(id, walletId, amount, null, null, balance, paymentMethod, type, status, reference, createdAt, message);
+	}
+
+	public TransactionResponse(
+			Long id,
+			Long walletId,
+			BigDecimal amount,
+			BigDecimal fees,
+			BigDecimal total,
+			BigDecimal balance,
+			PaymentMethod paymentMethod,
+			TransactionType type,
+			TransactionStatus status,
+			String reference,
+			LocalDateTime createdAt,
+			String message) {
 		this.id = id;
 		this.walletId = walletId;
 		this.amount = amount;
+		this.fees = fees;
+		this.total = total;
 		this.balance = balance;
 		this.paymentMethod = paymentMethod;
 		this.type = type;
@@ -53,6 +73,14 @@ public class TransactionResponse {
 
 	public BigDecimal getAmount() {
 		return amount;
+	}
+
+	public BigDecimal getFees() {
+		return fees;
+	}
+
+	public BigDecimal getTotal() {
+		return total;
 	}
 
 	public BigDecimal getBalance() {

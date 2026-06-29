@@ -2,11 +2,15 @@ package com.examen.badwallet_api.service.impl;
 
 import com.examen.badwallet_api.dto.request.CreateWalletRequest;
 import com.examen.badwallet_api.dto.request.DepositRequest;
+import com.examen.badwallet_api.dto.request.WithdrawRequest;
 import com.examen.badwallet_api.dto.response.TransactionResponse;
 import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
 import com.examen.badwallet_api.dto.response.WalletResponse;
 import com.examen.badwallet_api.entity.Transaction;
 import com.examen.badwallet_api.entity.Wallet;
+import com.examen.badwallet_api.enums.PaymentMethod;
+import com.examen.badwallet_api.enums.TransactionStatus;
+import com.examen.badwallet_api.enums.TransactionType;
 import com.examen.badwallet_api.exception.BusinessException;
 import com.examen.badwallet_api.patterns.strategy.DepositStrategy;
 import com.examen.badwallet_api.patterns.strategy.DepositStrategyFactory;
@@ -15,6 +19,8 @@ import com.examen.badwallet_api.repository.WalletRepository;
 import com.examen.badwallet_api.service.WalletService;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -24,6 +30,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class WalletServiceImpl implements WalletService {
+
+	private static final BigDecimal WITHDRAW_FEE_RATE = new BigDecimal("0.01");
+	private static final BigDecimal MAX_WITHDRAW_FEE = new BigDecimal("5000.00");
 
 	private final WalletRepository walletRepository;
 	private final TransactionRepository transactionRepository;
@@ -94,6 +103,36 @@ public class WalletServiceImpl implements WalletService {
 		return toTransactionResponse(savedTransaction, savedWallet);
 	}
 
+	@Override
+	@Transactional
+	public TransactionResponse withdraw(WithdrawRequest request) {
+		Wallet wallet = findWalletByPhoneNumber(request.getPhoneNumber());
+		BigDecimal amount = request.getAmount();
+		BigDecimal fees = calculateWithdrawFees(amount);
+		BigDecimal total = amount.add(fees);
+
+		if (wallet.getBalance().compareTo(total) < 0) {
+			throw new ResponseStatusException(
+					HttpStatus.CONFLICT,
+					"Solde insuffisant pour effectuer le retrait");
+		}
+
+		wallet.setBalance(wallet.getBalance().subtract(total));
+
+		Transaction transaction = new Transaction();
+		transaction.setWallet(wallet);
+		transaction.setAmount(amount);
+		transaction.setPaymentMethod(PaymentMethod.WALLET);
+		transaction.setType(TransactionType.WITHDRAW);
+		transaction.setStatus(TransactionStatus.SUCCESS);
+		transaction.setReference("WITHDRAW-" + UUID.randomUUID());
+
+		Wallet savedWallet = walletRepository.saveAndFlush(wallet);
+		Transaction savedTransaction = transactionRepository.saveAndFlush(transaction);
+
+		return toWithdrawTransactionResponse(savedTransaction, savedWallet, fees, total);
+	}
+
 	private void validateUniqueWallet(CreateWalletRequest request) {
 		if (walletRepository.existsByPhoneNumber(request.getPhoneNumber())) {
 			throw new BusinessException("Un wallet existe deja avec ce numero de telephone");
@@ -133,6 +172,14 @@ public class WalletServiceImpl implements WalletService {
 				wallet.getCurrency());
 	}
 
+	private BigDecimal calculateWithdrawFees(BigDecimal amount) {
+		BigDecimal fees = amount.multiply(WITHDRAW_FEE_RATE);
+		if (fees.compareTo(MAX_WITHDRAW_FEE) > 0) {
+			fees = MAX_WITHDRAW_FEE;
+		}
+		return fees.setScale(2, RoundingMode.HALF_UP);
+	}
+
 	private TransactionResponse toTransactionResponse(Transaction transaction, Wallet wallet) {
 		return new TransactionResponse(
 				transaction.getId(),
@@ -145,5 +192,25 @@ public class WalletServiceImpl implements WalletService {
 				transaction.getReference(),
 				transaction.getCreatedAt(),
 				"Depot effectue avec succes");
+	}
+
+	private TransactionResponse toWithdrawTransactionResponse(
+			Transaction transaction,
+			Wallet wallet,
+			BigDecimal fees,
+			BigDecimal total) {
+		return new TransactionResponse(
+				transaction.getId(),
+				wallet.getId(),
+				transaction.getAmount(),
+				fees,
+				total,
+				wallet.getBalance(),
+				transaction.getPaymentMethod(),
+				transaction.getType(),
+				transaction.getStatus(),
+				transaction.getReference(),
+				transaction.getCreatedAt(),
+				"Retrait effectue avec succes");
 	}
 }

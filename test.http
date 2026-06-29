@@ -36,3 +36,12 @@ Content-Type: application/json
   "amount": 50000.00,
   "paymentMethod": "CREDIT_CARD"
 }
+
+### Withdraw from wallet in badwallet-api
+POST {{walletHost}}/api/wallets/withdraw
+Content-Type: application/json
+
+{
+  "phoneNumber": "+221770000001",
+  "amount": 10000.00
+}
