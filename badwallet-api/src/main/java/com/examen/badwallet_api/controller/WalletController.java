@@ -1,7 +1,9 @@
 package com.examen.badwallet_api.controller;
 
 import com.examen.badwallet_api.dto.request.CreateWalletRequest;
+import com.examen.badwallet_api.dto.request.DepositRequest;
 import com.examen.badwallet_api.dto.response.SeedWalletResponse;
+import com.examen.badwallet_api.dto.response.TransactionResponse;
 import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
 import com.examen.badwallet_api.dto.response.WalletResponse;
 import com.examen.badwallet_api.service.WalletService;
@@ -58,6 +60,13 @@ public class WalletController {
 	@GetMapping("/{phoneNumber}/balance")
 	public WalletBalanceResponse getWalletBalance(@PathVariable String phoneNumber) {
 		return walletService.getWalletBalance(phoneNumber);
+	}
+
+	@PostMapping("/{id}/deposit")
+	public TransactionResponse deposit(
+			@PathVariable Long id,
+			@Valid @RequestBody DepositRequest request) {
+		return walletService.deposit(id, request);
 	}
 
 	@PostMapping("/seed")
