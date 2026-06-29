@@ -9,8 +9,10 @@ import com.examen.badwallet_api.service.WalletService;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class WalletServiceImpl implements WalletService {
@@ -40,6 +42,16 @@ public class WalletServiceImpl implements WalletService {
 	@Transactional(readOnly = true)
 	public Page<WalletResponse> listWallets(Pageable pageable) {
 		return walletRepository.findAll(pageable).map(this::toResponse);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public WalletResponse getWalletByPhoneNumber(String phoneNumber) {
+		return walletRepository.findByPhoneNumber(phoneNumber)
+				.map(this::toResponse)
+				.orElseThrow(() -> new ResponseStatusException(
+						HttpStatus.NOT_FOUND,
+						"Aucun wallet trouve avec ce numero de telephone"));
 	}
 
 	private void validateUniqueWallet(CreateWalletRequest request) {

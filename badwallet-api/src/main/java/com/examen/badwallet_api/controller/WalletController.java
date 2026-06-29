@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,6 +47,11 @@ public class WalletController {
 			@RequestParam(defaultValue = "0") @Min(0) int page,
 			@RequestParam(defaultValue = "10") @Min(1) int size) {
 		return walletService.listWallets(PageRequest.of(page, size));
+	}
+
+	@GetMapping("/{phoneNumber}")
+	public WalletResponse getWalletByPhoneNumber(@PathVariable String phoneNumber) {
+		return walletService.getWalletByPhoneNumber(phoneNumber);
 	}
 
 	@PostMapping("/seed")

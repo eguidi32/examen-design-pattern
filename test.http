@@ -19,3 +19,7 @@ Content-Type: application/json
 ### List wallets in badwallet-api
 GET {{walletHost}}/api/wallets?page=0&size=10
 Content-Type: application/json
+
+### Get wallet by phone number in badwallet-api
+GET {{walletHost}}/api/wallets/+221770000003
+Content-Type: application/json
