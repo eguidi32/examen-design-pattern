@@ -15,6 +15,8 @@ public interface FactureRepository extends JpaRepository<Facture, Long> {
 
 	Optional<Facture> findByReference(String reference);
 
+	List<Facture> findByReferenceIn(Collection<String> references);
+
 	long countByWalletCodeIn(Collection<String> walletCodes);
 
 	List<Facture> findByWalletCodeAndStatusAndDueDateBetween(

@@ -3,10 +3,12 @@ package com.examen.badwallet_api.service.impl;
 import com.examen.badwallet_api.dto.request.CreateWalletRequest;
 import com.examen.badwallet_api.dto.request.DepositRequest;
 import com.examen.badwallet_api.dto.request.PayCurrentFactureRequest;
+import com.examen.badwallet_api.dto.request.PaySpecificFacturesRequest;
 import com.examen.badwallet_api.dto.request.TransferRequest;
 import com.examen.badwallet_api.dto.request.WithdrawRequest;
 import com.examen.badwallet_api.dto.response.BillPaymentResponse;
 import com.examen.badwallet_api.dto.response.ExternalFactureResponse;
+import com.examen.badwallet_api.dto.response.SpecificBillPaymentResponse;
 import com.examen.badwallet_api.dto.response.TransactionResponse;
 import com.examen.badwallet_api.dto.response.WalletBalanceResponse;
 import com.examen.badwallet_api.dto.response.WalletResponse;
@@ -27,7 +29,14 @@ import com.examen.badwallet_api.service.WalletService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -232,6 +241,86 @@ public class WalletServiceImpl implements WalletService {
 				"Facture payee avec succes");
 	}
 
+	@Override
+	@Transactional
+	public SpecificBillPaymentResponse paySpecificFactures(PaySpecificFacturesRequest request) {
+		Wallet wallet = findWalletByPhoneNumber(request.getPhoneNumber());
+		String serviceName = request.getServiceName().trim();
+		List<String> requestedReferences = request.getFactureReferences()
+				.stream()
+				.map(String::trim)
+				.toList();
+		Set<String> distinctReferences = new LinkedHashSet<>(requestedReferences);
+
+		if (distinctReferences.size() != requestedReferences.size()) {
+			throw new ResponseStatusException(
+					HttpStatus.BAD_REQUEST,
+					"Les references de factures doivent etre distinctes");
+		}
+
+		List<ExternalFactureResponse> factures = paymentServiceProxy.getFacturesByReferences(requestedReferences);
+		Map<String, ExternalFactureResponse> facturesByReference = factures.stream()
+				.collect(Collectors.toMap(
+						ExternalFactureResponse::getReference,
+						Function.identity(),
+						(existing, replacement) -> existing,
+						LinkedHashMap::new));
+
+		List<String> missingReferences = requestedReferences.stream()
+				.filter(reference -> !facturesByReference.containsKey(reference))
+				.toList();
+		if (!missingReferences.isEmpty()) {
+			throw new ResponseStatusException(
+					HttpStatus.NOT_FOUND,
+					"Factures introuvables: " + String.join(", ", missingReferences));
+		}
+
+		List<ExternalFactureResponse> orderedFactures = requestedReferences.stream()
+				.map(facturesByReference::get)
+				.toList();
+
+		for (ExternalFactureResponse facture : orderedFactures) {
+			validateSpecificFacture(wallet, serviceName, facture);
+		}
+
+		BigDecimal totalAmount = orderedFactures.stream()
+				.map(ExternalFactureResponse::getAmount)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+
+		if (wallet.getBalance().compareTo(totalAmount) < 0) {
+			throw new ResponseStatusException(
+					HttpStatus.CONFLICT,
+					"Solde insuffisant pour payer les factures");
+		}
+
+		wallet.setBalance(wallet.getBalance().subtract(totalAmount));
+		Wallet savedWallet = walletRepository.saveAndFlush(wallet);
+
+		for (String reference : requestedReferences) {
+			paymentServiceProxy.markFactureAsPaid(reference);
+		}
+
+		Transaction transaction = new Transaction();
+		transaction.setWallet(savedWallet);
+		transaction.setAmount(totalAmount);
+		transaction.setPaymentMethod(PaymentMethod.WALLET);
+		transaction.setType(TransactionType.BILL_PAYMENT);
+		transaction.setStatus(TransactionStatus.SUCCESS);
+		transaction.setReference("BILL-PAYMENT-" + UUID.randomUUID());
+		transactionRepository.saveAndFlush(transaction);
+
+		return new SpecificBillPaymentResponse(
+				savedWallet.getPhoneNumber(),
+				savedWallet.getCode(),
+				serviceName,
+				requestedReferences,
+				totalAmount,
+				savedWallet.getBalance(),
+				TransactionType.BILL_PAYMENT,
+				TransactionStatus.SUCCESS,
+				"Factures payees avec succes");
+	}
+
 	private void validateUniqueWallet(CreateWalletRequest request) {
 		if (walletRepository.existsByPhoneNumber(request.getPhoneNumber())) {
 			throw new BusinessException("Un wallet existe deja avec ce numero de telephone");
@@ -343,5 +432,25 @@ public class WalletServiceImpl implements WalletService {
 				"Transfert effectue avec succes",
 				sender.getPhoneNumber(),
 				receiver.getPhoneNumber());
+	}
+
+	private void validateSpecificFacture(Wallet wallet, String serviceName, ExternalFactureResponse facture) {
+		if (!wallet.getCode().equals(facture.getWalletCode())) {
+			throw new ResponseStatusException(
+					HttpStatus.CONFLICT,
+					"La facture " + facture.getReference() + " n'appartient pas a ce wallet");
+		}
+
+		if (!serviceName.equalsIgnoreCase(facture.getServiceName())) {
+			throw new ResponseStatusException(
+					HttpStatus.CONFLICT,
+					"La facture " + facture.getReference() + " ne correspond pas au service demande");
+		}
+
+		if (!"UNPAID".equalsIgnoreCase(facture.getStatus())) {
+			throw new ResponseStatusException(
+					HttpStatus.CONFLICT,
+					"La facture " + facture.getReference() + " est deja payee");
+		}
 	}
 }

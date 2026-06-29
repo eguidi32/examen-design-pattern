@@ -11,5 +11,7 @@ public interface FactureService {
 
 	List<FactureResponse> findUnpaidFacturesByPeriod(String walletCode, LocalDate debut, LocalDate fin);
 
+	List<FactureResponse> findFacturesByReferences(List<String> references);
+
 	FactureResponse payFacture(String reference);
 }

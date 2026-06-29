@@ -10,5 +10,7 @@ public interface PaymentServiceProxy {
 
 	List<ExternalFactureResponse> getFacturesByPeriod(String walletCode, LocalDate debut, LocalDate fin);
 
+	List<ExternalFactureResponse> getFacturesByReferences(List<String> references);
+
 	ExternalFactureResponse markFactureAsPaid(String reference);
 }

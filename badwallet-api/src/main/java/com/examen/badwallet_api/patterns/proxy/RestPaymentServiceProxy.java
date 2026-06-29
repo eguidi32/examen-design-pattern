@@ -55,6 +55,39 @@ public class RestPaymentServiceProxy implements PaymentServiceProxy {
 	}
 
 	@Override
+	public List<ExternalFactureResponse> getFacturesByReferences(List<String> references) {
+		UriComponentsBuilder builder = UriComponentsBuilder
+				.fromUriString(paymentServiceBaseUrl)
+				.pathSegment("api", "factures", "by-references");
+
+		try {
+			ExternalFactureResponse[] response = restTemplate.postForObject(
+					builder.build().toUri(),
+					new FacturesByReferencesPayload(references),
+					ExternalFactureResponse[].class);
+			if (response == null) {
+				return Collections.emptyList();
+			}
+			return Arrays.asList(response);
+		} catch (ResourceAccessException exception) {
+			throw new ResponseStatusException(
+					HttpStatus.SERVICE_UNAVAILABLE,
+					"payment-service est indisponible",
+					exception);
+		} catch (HttpStatusCodeException exception) {
+			throw new ResponseStatusException(
+					HttpStatus.BAD_GATEWAY,
+					"payment-service a retourne une erreur: " + exception.getStatusCode(),
+					exception);
+		} catch (RestClientException exception) {
+			throw new ResponseStatusException(
+					HttpStatus.BAD_GATEWAY,
+					"Erreur lors de l'appel a payment-service",
+					exception);
+		}
+	}
+
+	@Override
 	public ExternalFactureResponse markFactureAsPaid(String reference) {
 		UriComponentsBuilder builder = UriComponentsBuilder
 				.fromUriString(paymentServiceBaseUrl)
@@ -109,6 +142,19 @@ public class RestPaymentServiceProxy implements PaymentServiceProxy {
 					HttpStatus.BAD_GATEWAY,
 					"Erreur lors de l'appel a payment-service",
 					exception);
+		}
+	}
+
+	private static class FacturesByReferencesPayload {
+
+		private final List<String> references;
+
+		private FacturesByReferencesPayload(List<String> references) {
+			this.references = references;
+		}
+
+		public List<String> getReferences() {
+			return references;
 		}
 	}
 }

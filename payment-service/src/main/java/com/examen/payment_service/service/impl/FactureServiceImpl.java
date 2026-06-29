@@ -62,6 +62,15 @@ public class FactureServiceImpl implements FactureService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
+	public List<FactureResponse> findFacturesByReferences(List<String> references) {
+		return factureRepository.findByReferenceIn(references)
+				.stream()
+				.map(this::toResponse)
+				.toList();
+	}
+
+	@Override
 	@Transactional
 	public FactureResponse payFacture(String reference) {
 		Facture facture = factureRepository.findByReference(reference)
